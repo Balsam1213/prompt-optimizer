@@ -1,11 +1,11 @@
 ---
 name: prompt-optimizer
-description: 把模糊、口语化的需求转化为可直接复制投喂给任何 AI 的完整提示词（prompt），也用于优化、重写已有提示词，或为图像/视频生成工具（Sora、Veo、可灵、即梦、Midjourney 等）撰写提示词。Trigger whenever the user says 写提示词 / 写个 prompt / 优化提示词 / 把需求变成 prompt / 帮我写个 system prompt / 写视频或图片的 prompt, or describes a vague need they intend to hand to another AI — even casually phrased. Converts vague requirements into self-contained, copy-paste-ready prompts.
+description: 把模糊、口语化的需求转化为可直接复制投喂给任何 AI 的完整提示词（prompt），也用于优化、重写已有提示词，或为图像/视频生成工具（Sora、Veo、可灵、即梦、Midjourney 等）撰写提示词。Trigger whenever the user says 写提示词 / 写个 prompt / 优化提示词 / 把需求变成 prompt / 帮我写个 system prompt / 写视频或图片的 prompt, or describes a vague need they intend to hand to another AI — even casually phrased. Also triggers for prompt-library reuse: when the user asks to 生成视频 / 出片 / 用上次（之前那个）的提示词, retrieve the saved prompt from the workspace prompts/ library and feed it directly to whatever generation capability the session has — never ask the user to re-paste, and show the prompt text only when they ask to see it. Converts vague requirements into self-contained, copy-paste-ready prompts.
 ---
 
 # 提示词优化器
 
-把用户模糊、不完整的一句话需求，转化为一条自包含、可直接复制投喂给任何 AI 的提示词。也接受现成提示词做诊断和重写。
+把用户模糊、不完整的一句话需求，转化为一条自包含、可直接复制投喂给任何 AI 的提示词。也接受现成提示词做诊断和重写。优化结果自动存入工作区的提示词库，之后可直接复用：生成时由 agent 取出提示词、直接交给会话具备的生成能力，用户不需要重新粘贴，提示词正文只在用户要求看时才展示。
 
 ## 四条核心原则
 
@@ -74,6 +74,54 @@ description: 把模糊、口语化的需求转化为可直接复制投喂给任�
 ```
 
 需求已足够明确、零假设时，省略「关键假设」；没有值得问的，省略「可选确认」；但「可直接投喂的提示词」永远在第一位，永远是一个独立完整的代码块。
+
+交付的同一轮，把提示词写入当前工作区的提示词库（见下一节），让后续生成免粘贴、免重新优化。
+
+## 提示词库：保存与复用
+
+### 保存
+
+首次交付的同一轮，把提示词写入库文件：
+
+- 位置：`<当前工作区>/prompts/<日期>-<短标题>.md`，如 `prompts/2026-10-05-赛博朋克城市夜景.md`
+- 文件格式：
+
+```markdown
+---
+title: 赛博朋克城市夜景
+date: 2026-10-05
+type: video
+target: 通用
+status: ready
+source: 帮我写个视频 prompt，赛博朋克城市夜景
+---
+
+## 提示词
+
+（最终提示词全文——这一节就是投喂内容，前后不要包裹任何解释）
+
+## 假设与备注
+
+- 时长按 5 秒假设
+- ……
+```
+
+- `type` 取 `video` / `image` / `general`；`target` 写目标工具，未知写「通用」；`status` 取 `ready`（可投喂）/ `archived`（已废弃，不再被检索命中）。
+- 保存后在交付末尾加一句：「已存入提示词库 prompts/xxx.md，之后直接说"生成视频"即可复用。」
+
+### 复用（直接生成）
+
+用户要求生成（"生成视频 / 出片 / 用上次那个提示词跑一下"）时：
+
+1. **定位**：用户指明了是哪条就用那条；没指明则取最近保存且 `type` 与请求匹配、`status` 为 ready 的那条，并说一句用的是哪条；有多个合理候选时，列出候选文件名让用户选——这是复用流程里唯一允许的提问。库里找不到候选时，直接走正常优化流程并把产物入库，不要空手反问。
+2. **读取**：从库文件读出「## 提示词」一节的全文。
+3. **投喂**：把提示词直接交给当前会话可用的生成能力——生成工具、MCP、脚本、浏览器操作，有什么用什么。不要在对话里复述提示词全文，不要让用户复制粘贴。
+4. **展示条件**：只有两种情况展示提示词原文——用户明确要求看（"把提示词发我 / 恢复提示词"），或当前会话没有任何生成能力（此时说明缺什么能力，并把提示词给用户供手动使用）。
+5. **迭代**：用户对生成结果不满意要改提示词时，改完更新同一个库文件（`status` 改回 `ready`），再投喂；改动的假设同步更新「假设与备注」。
+
+### 无文件能力时的退化
+
+在没有文件读写能力的纯对话环境中，跳过入库：在会话内记住提示词并直接复用；用户要求保存时，把上面的文件格式发给用户自行保存。
 
 ## 优化已有提示词的模式
 
