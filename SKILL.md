@@ -1,6 +1,6 @@
 ---
 name: prompt-optimizer
-description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 的完整提示词（prompt），优化、重写已有提示词，为图像/视频生成工具（Sora、Veo、可灵、即梦、Midjourney 等）撰写提示词。Trigger whenever the user says 写提示词 / 写个 prompt / 优化提示词 / 把需求变成 prompt, or describes a vague need they intend to hand to another AI — even casually phrased. Also triggers when the user directly asks for a generation result (帮我生成一个视频：… / 生成一张图 / 出片): silently optimize the prompt in-context and feed it straight to whatever generation capability the session has — one turn, no back-and-forth, prompt not shown unless the user asks. Converts vague requirements into self-contained, feedable prompts.
+description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 的完整提示词（prompt），优化、重写已有提示词，为图像/视频生成工具（Sora、Veo、可灵、即梦、Nano Banana、Midjourney、FLUX、Seedance 等）撰写提示词，也做参考图反推提示词（图画文 / img2prompt）、角色与场景跨图一致性（character sheet）、负面提示词。Trigger whenever the user says 写提示词 / 写个 prompt / 优化提示词 / 把需求变成 prompt, or describes a vague need they intend to hand to another AI — even casually phrased. Also triggers when the user directly asks for a generation result (帮我生成一个视频：… / 生成一张图 / 出片): silently optimize the prompt in-context and feed it straight to whatever generation capability the session has — one turn, no back-and-forth, prompt not shown unless the user asks. Converts vague requirements into self-contained, constraint-driven, feedable prompts.
 ---
 
 # 提示词优化器
@@ -12,7 +12,7 @@ description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 
 1. **直接产出，不审问用户。** 用户要的是"可直接投喂"的提示词。默认基于合理假设立即产出，假设逐条明示；不要用一连串问题把用户挡在门外。生成模式下更要一步到位：优化、投喂、出结果在同一次回复里完成。
 2. **最终提示词自包含。** 它会被粘贴到一个全新对话里使用，执行 AI 看不到本次对话的任何上下文。所有必要信息必须写在提示词内部。
 3. **面向执行者，不是转述需求。** 最终提示词是对执行 AI 的指令（第二人称祈使句）。❌"我想要一个整理周报的提示词" ✅"你是我的周报助理。请根据我提供的会议记录……"
-4. **语言跟随用户。** 用户用中文提问就产出中文提示词，用户明确要求英文则用英文。产出中的技术术语可保留英文原文。
+4. **语言跟随用户。** 用户用中文提问就产出中文提示词，用户明确要求英文则用英文。产出中的技术术语可保留英文原文。生成类任务（图像/视频）例外：默认中英双语对照交付——中文给用户校对，`English:` 版给模型执行，详见 `references/gen-core.md`。
 
 ## 两种模式
 
@@ -52,7 +52,7 @@ description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 
 [角色] + [任务] + [上下文] + [约束] + [输出格式] + [质量标准]
 ```
 
-按任务类型决定叠加组件（思维链引导 / few-shot 示例 / 自检清单 / 输出模板锁定）。详细的框架说明和中文示例读 `references/frameworks.md`；图像/视频生成类必读 `references/video-image.md`。
+按任务类型决定叠加组件（思维链引导 / few-shot 示例 / 自检清单 / 输出模板锁定）。详细的框架说明和中文示例读 `references/frameworks.md`；图像/视频生成类必读 `references/gen-core.md`（六层约束模型与任务路由），再按任务读 `gen-image.md` / `gen-video.md` / `gen-consistency-negative.md` / `gen-models-vocab.md`。
 
 ### 第 4 步：撰写
 
@@ -86,7 +86,7 @@ description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 
 
 用户的请求要的是生成结果而不是提示词时，在同一次回复里完成全流程，不反问、不展示提示词：
 
-1. **内部优化**：按五要素解析需求，缺口直接做合理假设；按提示词模式第 3、4 步写出完整提示词。这一步在内部完成，不写入对话。
+1. **内部优化**：按五要素解析需求，缺口直接做合理假设；生图/视频任务先读 `references/gen-core.md`（六层约束与路由）及对应专项参考，再写出完整提示词。这一步在内部完成，不写入对话。
 2. **直接投喂**：把提示词交给当前会话可用的生成能力——生成工具、MCP、脚本、浏览器操作，有什么用什么。
 3. **交付结果**：给出视频/图像，并用一行说明关键假设（如「按 5 秒、实拍风格、单镜头处理」）。不展示提示词全文，不落盘。
 4. **展示条件**：用户要求看提示词（「把提示词发我」）才展示原文；会话没有任何生成能力时，说明缺什么能力，并给出优化后的提示词供用户手动使用。
@@ -115,6 +115,7 @@ description: 把模糊、口语化的需求转化为可直接投喂给任何 AI 
 - [ ] {{占位符}} 已标注填法
 - [ ] 所有假设已声明
 - [ ] 没有互相冲突的约束
+- [ ] 生成类任务：已过 `references/gen-core.md` 的六层自检与交付前清单
 
 ## 可移植性约束
 
